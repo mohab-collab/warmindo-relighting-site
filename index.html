@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Warmindo — Relighting Consistency Review</title>
+<style>
+  :root{
+    --bg:#0d0e10; --panel:#16181c; --panel2:#1d2025; --line:#2a2e35;
+    --text:#eceef1; --muted:#9aa1ab; --accent:#f2b544; --accent2:#5fb3ff;
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 "Segoe UI",Inter,system-ui,-apple-system,sans-serif}
+  a{color:var(--accent2)}
+  header{position:sticky;top:0;z-index:20;background:rgba(13,14,16,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .bar{max-width:1500px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+  .brand{font-weight:700;letter-spacing:.02em;font-size:17px}
+  .brand small{display:block;font-weight:400;color:var(--muted);font-size:12.5px;letter-spacing:0}
+  .tabs{display:flex;gap:6px;margin-left:auto;background:var(--panel);padding:4px;border-radius:999px;border:1px solid var(--line)}
+  .tab{border:0;background:transparent;color:var(--muted);padding:8px 18px;border-radius:999px;cursor:pointer;font:inherit;font-weight:600}
+  .tab.active{background:var(--accent);color:#16120a}
+  main{max-width:1500px;margin:0 auto;padding:28px 24px 80px}
+  .view{display:none}.view.active{display:block}
+  h2{margin:0 0 4px;font-size:22px}
+  .lead{color:var(--muted);margin:0 0 22px;max-width:980px}
+  .legend{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 26px}
+  .legend div{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:13px;max-width:290px}
+  .legend b{display:block;font-size:13.5px}
+  .legend span{color:var(--muted)}
+
+  /* Shot card */
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin-bottom:34px}
+  .card-head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+  .shot-id{font-size:13px;font-weight:700;color:#16120a;background:var(--accent);padding:3px 9px;border-radius:6px}
+  .card-head h3{margin:0;font-size:19px}
+  .angle{color:var(--muted);font-size:13.5px}
+  .compare{position:relative;width:100%;aspect-ratio:16/9;border-radius:10px;overflow:hidden;background:#000;user-select:none;touch-action:none;cursor:ew-resize}
+  .compare img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none}
+  .compare .before{clip-path:inset(0 50% 0 0)}
+  .compare .handle{position:absolute;top:0;bottom:0;left:50%;width:2px;background:#fff;box-shadow:0 0 12px rgba(0,0,0,.6);transform:translateX(-1px)}
+  .compare .handle::after{content:"◂ ▸";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;color:#111;font-size:12px;font-weight:700;padding:7px 9px;border-radius:999px;white-space:nowrap}
+  .compare .tag{position:absolute;top:12px;padding:5px 10px;border-radius:6px;background:rgba(0,0,0,.62);font-size:12.5px;font-weight:600;pointer-events:none}
+  .compare .tag.l{left:12px}.compare .tag.r{right:12px;color:var(--accent)}
+  .compare.single{cursor:default}
+  .compare.single .before,.compare.single .handle,.compare.single .tag.r{display:none}
+  .fs{position:absolute;right:12px;bottom:12px;z-index:3;border:0;background:rgba(0,0,0,.62);color:#fff;border-radius:6px;padding:6px 10px;cursor:pointer;font:inherit;font-size:12.5px}
+  .thumbs{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-top:12px}
+  .thumb{border:2px solid transparent;border-radius:9px;padding:0;background:var(--panel2);cursor:pointer;overflow:hidden;text-align:left;color:var(--text);font:inherit}
+  .thumb img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover}
+  .thumb span{display:block;padding:6px 8px;font-size:12px;font-weight:600}
+  .thumb span i{display:block;font-style:normal;font-weight:400;color:var(--muted);font-size:11.5px}
+  .thumb.active{border-color:var(--accent)}
+  .thumb:hover{border-color:#555}
+  .thumb.active:hover{border-color:var(--accent)}
+  .vid-title{margin:22px 0 10px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .vid-title h4{margin:0;font-size:15px}
+  .vid-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .vbox{background:var(--panel2);border-radius:9px;overflow:hidden}
+  .vbox video{display:block;width:100%;aspect-ratio:16/9;background:#000}
+  .vbox .cap{padding:7px 10px;font-size:12.5px;font-weight:600}
+  .vbox .cap i{display:block;font-style:normal;font-weight:400;color:var(--muted);font-size:11.5px}
+  .btn{border:1px solid var(--line);background:var(--panel2);color:var(--text);padding:7px 14px;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:600}
+  .btn:hover{border-color:#555}
+  .btn.primary{background:var(--accent);color:#16120a;border-color:var(--accent)}
+
+  /* Consistency tab */
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+  .chip{border:1px solid var(--line);background:var(--panel);color:var(--muted);padding:7px 14px;border-radius:999px;cursor:pointer;font:inherit;font-size:13px;font-weight:600}
+  .chip.active{background:var(--accent);border-color:var(--accent);color:#16120a}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .cell{position:relative;border-radius:10px;overflow:hidden;background:#000;cursor:zoom-in}
+  .cell img,.cell video{display:block;width:100%;aspect-ratio:16/9;object-fit:cover}
+  .cell .lbl{position:absolute;left:8px;bottom:8px;background:rgba(0,0,0,.66);padding:4px 9px;border-radius:6px;font-size:12px;font-weight:600}
+  .cell .lbl i{font-style:normal;font-weight:400;color:var(--muted);margin-left:6px}
+  .cell .orig{position:absolute;inset:0;opacity:0;transition:opacity .15s}
+  .grid.peek .cell:hover .orig{opacity:1}
+  .toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 14px}
+  .toolbar label{color:var(--muted);font-size:13px;display:flex;align-items:center;gap:6px;cursor:pointer}
+  .section{margin-top:44px}
+  .note{color:var(--muted);font-size:13px;margin:6px 0 14px}
+  .note b{color:var(--text)}
+  .vgrid video{cursor:default}
+
+  /* Lightbox */
+  .lb{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.92);display:none;align-items:center;justify-content:center;padding:30px}
+  .lb.open{display:flex}
+  .lb img{max-width:100%;max-height:100%;border-radius:8px}
+  .lb .x{position:absolute;top:16px;right:20px;font-size:28px;color:#fff;cursor:pointer;background:none;border:0}
+  .lb .cap{position:absolute;bottom:18px;left:0;right:0;text-align:center;color:var(--muted);font-size:13px}
+
+  /* Prompt panels */
+  .prompt{margin-top:12px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .prompt.hidden{display:none}
+  .prompt-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+  .prompt-head b{font-size:13.5px}
+  .prompt-head .copy{margin-left:auto;padding:4px 10px;font-size:12px}
+  .settings{font-size:12px;color:var(--accent2);margin-bottom:8px;font-family:Consolas,"Cascadia Mono",monospace}
+  .prompt pre{margin:0;white-space:pre-wrap;word-wrap:break-word;font:12.5px/1.55 Consolas,"Cascadia Mono",monospace;color:#cfd4db;max-height:180px;overflow:auto}
+  .prompt.open pre{max-height:none}
+  .more{background:none;border:0;color:var(--accent2);cursor:pointer;font:inherit;font-size:12px;padding:6px 0 0}
+  details.vp{margin-top:12px}
+  details.vp summary{cursor:pointer;color:var(--muted);font-size:13px;font-weight:600}
+  details.vp .prompt{margin-top:10px}
+
+  /* Notes tab */
+  .notes-grid{display:grid;gap:16px}
+  .ncard{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px}
+  .ncard-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+  .ncard-head h3{margin:0;font-size:17px}
+  .badge{font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:999px;text-transform:uppercase;letter-spacing:.04em}
+  .badge.ok{background:#1f3b2a;color:#7ee2a1}.badge.warn{background:#3d3218;color:#f2c96b}.badge.bad{background:#3d1d1d;color:#ff9b9b}.badge.info{background:#1d2b3d;color:#8cc4ff}
+  .ncard .meta{color:var(--accent2);font-size:12px;font-family:Consolas,"Cascadia Mono",monospace;margin-bottom:10px}
+  .ncols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .ncols h4{margin:0 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.05em}
+  .ncols .good h4{color:#7ee2a1}.ncols .badc h4{color:#ff9b9b}
+  .ncols ul{margin:0;padding-left:18px}
+  .ncols li{margin:3px 0;font-size:13.5px}
+  .ncard .why{color:var(--muted);font-size:13.5px;margin:0 0 10px}
+  .ncard .next{margin-top:10px;font-size:13px;background:var(--panel2);border-radius:8px;padding:8px 12px}
+  .ncard .next b{color:var(--accent)}
+  .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+  .summary div{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .summary b{display:block;font-size:20px}
+  .summary span{color:var(--muted);font-size:12.5px}
+
+  @media (max-width:900px){
+    .ncols,.summary{grid-template-columns:1fr}
+    .thumbs{grid-template-columns:repeat(3,1fr)}
+    .vid-row,.grid{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <div class="brand">Warmindo · Relighting Consistency Review<small>Pratidina virtual production · shot HD-COMP-B001 · 6 camera angles</small></div>
+    <nav class="tabs">
+      <button class="tab active" data-view="shots">Shot by shot</button>
+      <button class="tab" data-view="all">All angles · consistency</button>
+      <button class="tab" data-view="notes">Notes &amp; issues</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="view active" id="view-shots">
+    <h2>Shot by shot</h2>
+    <p class="lead">Each card shows one camera angle. Click any relight under the big frame to compare it with the original, then drag the divider. Below each card are the first 15 seconds of that shot as video: original, night relight and studio relight.</p>
+    <div class="legend" id="legend"></div>
+    <div id="cards"></div>
+  </section>
+
+  <section class="view" id="view-all">
+    <h2>All angles · consistency</h2>
+    <p class="lead">All six cameras side by side in one lighting version, so you can check that the light comes from the same place in every angle. Turn on "Peek original" and hover a frame to see the source plate.</p>
+    <div class="chips" id="stillChips"></div>
+    <div class="toolbar"><label><input type="checkbox" id="peek"> Peek original on hover</label></div>
+    <div class="grid" id="stillGrid"></div>
+
+    <div class="section">
+      <h2>Video wall</h2>
+      <p class="lead" style="margin-bottom:12px">All six shots in one version (first 15 seconds each), played together.</p>
+      <div class="chips" id="vidChips"></div>
+      <div class="toolbar">
+        <button class="btn primary" id="wallPlay">▶ Play all</button>
+        <button class="btn" id="wallPause">❚❚ Pause</button>
+        <button class="btn" id="wallRestart">⟲ Restart</button>
+        <label><input type="checkbox" id="wallMute" checked> Mute</label>
+      </div>
+      <div class="note" id="vidNote"></div>
+      <div class="grid vgrid" id="vidGrid"></div>
+    </div>
+  </section>
+
+  <section class="view" id="view-notes">
+    <h2>Notes &amp; issues</h2>
+    <p class="lead">What we tried at each step, what worked, and what went wrong. Use this to decide what to adjust next. The exact prompt for every shot is in the "Shot by shot" tab, under each frame and each video.</p>
+    <div class="summary" id="summary"></div>
+    <div class="notes-grid" id="notes"></div>
+  </section>
+</main>
+
+<div class="lb" id="lb"><button class="x" aria-label="Close">×</button><img alt=""><div class="cap"></div></div>
+
+<script src="assets/prompts.js"></script>
+<script src="assets/notes.js"></script>
+<script>
+const SHOTS = [
+  {id:'0001', name:'Wide frontal master',            angle:'Camera 0° · frontal · eye level'},
+  {id:'0002', name:'Wider frontal master, full banner', angle:'Camera 0° · frontal · slightly higher'},
+  {id:'0003', name:'MCU · cap man, over shoulder',   angle:'Camera ≈40° to the right · looking left'},
+  {id:'0004', name:'MCU · curly-hair man, over shoulder', angle:'Camera ≈45° to the left · garden behind'},
+  {id:'0005', name:'Wide three-quarter two-shot',    angle:'Camera ≈40° to the left · looking right'},
+  {id:'0006', name:'Three-quarter two-shot, tighter', angle:'Camera ≈35° to the left · looking right'},
+];
+const VERSIONS = [
+  {k:'orig', name:'Original',           desc:'Source plate'},
+  {k:'v1',   name:'V1 · Afternoon sun', desc:'Warm sun from the garden side'},
+  {k:'v2',   name:'V2 · Midday soft',   desc:'Soft overhead daylight'},
+  {k:'v4',   name:'V4 · Studio',        desc:'Soft box key front-right, rim, separation'},
+  {k:'v5',   name:'V5 · Night',         desc:'Soft boxes, cool moon, warm practicals'},
+  {k:'v6',   name:'V6 · Night, locked', desc:'Night with practicals fixed in place'},
+];
+const VIDS = [
+  {k:'orig', name:'Original',               desc:'Source, first 15s'},
+  {k:'v6',   name:'V6 · Night (Kling 4.0)', desc:'Video edit, V6 still as reference'},
+  {k:'v4',   name:'V4 · Studio (Kling 4.0)',desc:'Video edit, V4 still as light reference'},
+];
+const VID_NOTES = {
+  orig:'',
+  v6:'<b>Known issues:</b> 0003 had its background rebuilt by the model, and a moon was added in 0001 and 0003. Clip 0001 opens on the standing yard shot.',
+  v4:'<b>Known issues:</b> the backgrounds are preserved, but a soft box is visible in the frame in 0001, 0002, 0004, 0005 and 0006. A re-run with an off-screen light prompt is pending. Only 0003 is clean.',
+};
+const img = (id,k,t) => `assets/img/${id}_${k}${t?'_t':''}.jpg`;
+const vid = (id,k) => `assets/vid/${id}_${k}.mp4`;
+const vName = k => VERSIONS.find(v=>v.k===k).name;
+
+/* Tabs */
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===b));
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+b.dataset.view));
+  document.querySelectorAll('video').forEach(v=>v.pause());
+  window.scrollTo({top:0});
+});
+
+/* Legend */
+document.getElementById('legend').innerHTML = VERSIONS.slice(1).map(v=>`<div><b>${v.name}</b><span>${v.desc}</span></div>`).join('');
+
+/* Compare slider */
+function makeCompare(el){
+  const before = el.querySelector('.before'), handle = el.querySelector('.handle');
+  let drag=false;
+  const set = x => { const r=el.getBoundingClientRect(); let p=Math.min(100,Math.max(0,(x-r.left)/r.width*100));
+    before.style.clipPath=`inset(0 ${100-p}% 0 0)`; handle.style.left=p+'%'; };
+  el.addEventListener('pointerdown',e=>{ if(el.classList.contains('single')||e.target.closest('.fs'))return; drag=true; el.setPointerCapture(e.pointerId); set(e.clientX); });
+  el.addEventListener('pointermove',e=>{ if(drag) set(e.clientX); });
+  el.addEventListener('pointerup',()=>drag=false);
+  el.reset = () => { before.style.clipPath='inset(0 50% 0 0)'; handle.style.left='50%'; };
+}
+
+/* Prompt panels */
+const esc = t => t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const promptInner = (title,p) => `<div class="prompt-head"><b>${title}</b><button class="btn copy">Copy prompt</button></div><div class="settings">${esc(p.settings)}</div><pre>${esc(p.prompt)}</pre><button class="more">Show full prompt ▾</button>`;
+const promptHTML = (title,p) => `<div class="prompt">${promptInner(title,p)}</div>`;
+function wirePrompt(el){
+  const pre = el.querySelector('pre');
+  el.querySelector('.copy').onclick = () => navigator.clipboard.writeText(pre.textContent).then(()=>{ const b=el.querySelector('.copy'); b.textContent='Copied ✓'; setTimeout(()=>b.textContent='Copy prompt',1500); });
+  el.querySelector('.more').onclick = () => { el.classList.toggle('open'); el.querySelector('.more').textContent = el.classList.contains('open') ? 'Collapse ▴' : 'Show full prompt ▾'; };
+}
+
+/* Shot cards */
+const cards = document.getElementById('cards');
+SHOTS.forEach(s=>{
+  const c = document.createElement('article'); c.className='card';
+  c.innerHTML = `
+    <div class="card-head"><span class="shot-id">${s.id}</span><h3>${s.name}</h3><span class="angle">${s.angle}</span></div>
+    <div class="compare">
+      <img class="after" src="${img(s.id,'v4')}" alt="">
+      <img class="before" src="${img(s.id,'orig')}" alt="">
+      <div class="handle"></div>
+      <span class="tag l">Original</span><span class="tag r">${vName('v4')}</span>
+      <button class="fs">⛶ Fullscreen</button>
+    </div>
+    <div class="thumbs">${VERSIONS.map(v=>`<button class="thumb${v.k==='v4'?' active':''}" data-k="${v.k}"><img loading="lazy" src="${img(s.id,v.k,1)}" alt=""><span>${v.name}<i>${v.desc}</i></span></button>`).join('')}</div>
+    <div class="prompt photo-prompt"></div>
+    <div class="vid-title"><h4>Video · first 15 seconds</h4><button class="btn primary sync">▶ Play all three in sync</button><button class="btn pause">❚❚ Pause</button></div>
+    <div class="vid-row">${VIDS.map(v=>`<div class="vbox"><video controls preload="metadata" playsinline poster="assets/vid/${s.id}_poster.jpg" src="${vid(s.id,v.k)}"></video><div class="cap">${v.name}<i>${v.desc}</i></div></div>`).join('')}</div>
+    <details class="vp"><summary>Show video prompts (V6 night · V4 studio)</summary>
+      ${promptHTML('V6 · Night (Kling 4.0)', PROMPTS[s.id].vid_v6)}
+      ${promptHTML('V4 · Studio (Kling 4.0)', PROMPTS[s.id].vid_v4)}
+    </details>`;
+  cards.appendChild(c);
+  const cmp = c.querySelector('.compare'); makeCompare(cmp);
+  const pp = c.querySelector('.photo-prompt');
+  const showPrompt = k => {
+    if(k==='orig'){ pp.classList.add('hidden'); return; }
+    pp.classList.remove('hidden','open');
+    pp.innerHTML = promptInner(`Prompt · ${vName(k)} · shot ${s.id}`, PROMPTS[s.id][k]);
+    wirePrompt(pp);
+  };
+  c.querySelectorAll('.thumb').forEach(t=>t.onclick=()=>{
+    c.querySelectorAll('.thumb').forEach(x=>x.classList.toggle('active',x===t));
+    const k=t.dataset.k;
+    if(k==='orig'){ cmp.classList.add('single'); cmp.querySelector('.after').src=img(s.id,'orig'); }
+    else { cmp.classList.remove('single'); cmp.querySelector('.after').src=img(s.id,k); cmp.querySelector('.tag.r').textContent=vName(k); cmp.reset(); }
+    showPrompt(k);
+  });
+  showPrompt('v4');
+  c.querySelectorAll('details.vp .prompt').forEach(wirePrompt);
+  cmp.querySelector('.fs').onclick=()=>{ cmp.requestFullscreen?cmp.requestFullscreen():cmp.webkitRequestFullscreen&&cmp.webkitRequestFullscreen(); };
+  const vs=[...c.querySelectorAll('video')];
+  c.querySelector('.sync').onclick=()=>{ vs.forEach((v,i)=>{ v.currentTime=0; v.muted=i>0; v.play(); }); };
+  c.querySelector('.pause').onclick=()=>vs.forEach(v=>v.pause());
+});
+
+/* Consistency stills grid */
+let stillK='v4';
+const stillChips=document.getElementById('stillChips'), stillGrid=document.getElementById('stillGrid');
+function renderStills(){
+  stillChips.innerHTML = VERSIONS.map(v=>`<button class="chip${v.k===stillK?' active':''}" data-k="${v.k}">${v.name}</button>`).join('');
+  stillChips.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{stillK=b.dataset.k;renderStills();});
+  stillGrid.innerHTML = SHOTS.map(s=>`<div class="cell" data-id="${s.id}"><img src="${img(s.id,stillK)}" alt=""><img class="orig" src="${img(s.id,'orig')}" alt=""><span class="lbl">${s.id}<i>${s.angle}</i></span></div>`).join('');
+  stillGrid.querySelectorAll('.cell').forEach(cell=>cell.onclick=()=>openLB(img(cell.dataset.id,stillK), `${cell.dataset.id} · ${vName(stillK)}`));
+}
+document.getElementById('peek').onchange=e=>stillGrid.classList.toggle('peek',e.target.checked);
+renderStills();
+
+/* Video wall */
+let vidK='v6';
+const vidChips=document.getElementById('vidChips'), vidGrid=document.getElementById('vidGrid');
+function renderVids(){
+  vidChips.innerHTML = VIDS.map(v=>`<button class="chip${v.k===vidK?' active':''}" data-k="${v.k}">${v.name}</button>`).join('');
+  vidChips.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{vidK=b.dataset.k;renderVids();});
+  document.getElementById('vidNote').innerHTML = VID_NOTES[vidK];
+  const muted=document.getElementById('wallMute').checked;
+  vidGrid.innerHTML = SHOTS.map(s=>`<div class="cell"><video ${muted?'muted':''} playsinline preload="metadata" loop poster="assets/vid/${s.id}_poster.jpg" src="${vid(s.id,vidK)}"></video><span class="lbl">${s.id}<i>${s.angle}</i></span></div>`).join('');
+}
+const wall=()=>[...vidGrid.querySelectorAll('video')];
+document.getElementById('wallPlay').onclick=()=>wall().forEach(v=>v.play());
+document.getElementById('wallPause').onclick=()=>wall().forEach(v=>v.pause());
+document.getElementById('wallRestart').onclick=()=>wall().forEach(v=>{v.currentTime=0;v.play();});
+document.getElementById('wallMute').onchange=e=>wall().forEach((v,i)=>v.muted=e.target.checked||i>0);
+renderVids();
+
+/* Notes tab */
+document.getElementById('summary').innerHTML = SUMMARY.map(s=>`<div><b>${s.big}</b><span>${s.small}</span></div>`).join('');
+document.getElementById('notes').innerHTML = NOTES.map(n=>`
+  <article class="ncard">
+    <div class="ncard-head"><h3>${n.title}</h3><span class="badge ${n.status}">${n.label}</span></div>
+    <div class="meta">${n.meta}</div>
+    <p class="why">${n.why}</p>
+    <div class="ncols">
+      <div class="good"><h4>What worked</h4><ul>${n.good.map(x=>`<li>${x}</li>`).join('')}</ul></div>
+      <div class="badc"><h4>What went wrong</h4><ul>${n.bad.map(x=>`<li>${x}</li>`).join('')}</ul></div>
+    </div>
+    ${n.next?`<div class="next"><b>Next:</b> ${n.next}</div>`:''}
+  </article>`).join('');
+
+/* Lightbox */
+const lb=document.getElementById('lb');
+function openLB(src,cap){ lb.querySelector('img').src=src; lb.querySelector('.cap').textContent=cap; lb.classList.add('open'); }
+lb.onclick=e=>{ if(e.target!==lb.querySelector('img')) lb.classList.remove('open'); };
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') lb.classList.remove('open'); });
+</script>
+</body>
+</html>
