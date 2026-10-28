@@ -4,7 +4,9 @@ A review site for the Pratidina virtual-production relighting tests on shot HD-C
 
 ## Open it
 
-Clone the repo, then serve the folder (browsers block local video playback from `file://`):
+**Live site:** https://mohab-collab.github.io/warmindo-relighting-site/
+
+To run it locally instead, serve the folder (browsers block local video playback from `file://`):
 
 ```bash
 python -m http.server 8000
